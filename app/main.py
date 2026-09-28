@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 app = FastAPI(title="Sensor API", version="1.0.0")
@@ -33,3 +33,18 @@ def list_readings(sensor_id: str | None = None):
     if sensor_id:
         return [r for r in readings if r["sensor_id"] == sensor_id]
     return readings
+
+@app.get("/readings/{sensor_id}/stats")
+def sensor_stats(sensor_id: str):
+    temperatures = [r["temperature"] for r in readings if r["sensor_id"] == sensor_id]
+
+    if not temperatures:
+        raise HTTPException(status_code=404, detail="No readings for this sensor")
+
+    return {
+        "sensor_id": sensor_id,
+        "count": len(temperatures),
+        "average": round(sum(temperatures) / len(temperatures), 2),
+        "min": min(temperatures),
+        "max": max(temperatures),
+    }
